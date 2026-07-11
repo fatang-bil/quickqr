@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free QR Code Generator - Create QR Codes Instantly</title>
+  <meta name="description" content="Generate QR codes instantly for websites, Wi-Fi networks, contact cards, text, email and more. Free, private and no signup required.">
+  <link rel="canonical" href="https://yourdomain.com/">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#2563eb">
+  <meta property="og:title" content="Free QR Code Generator - Create QR Codes Instantly">
+  <meta property="og:description" content="Generate QR codes instantly for websites, Wi-Fi networks, contact cards, text, email and more. Free, private and no signup required.">
+  <meta property="og:image" content="https://yourdomain.com/quick-qr-preview.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yourdomain.com/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Free QR Code Generator - Create QR Codes Instantly">
+  <meta name="twitter:description" content="Generate QR codes instantly for websites, Wi-Fi networks, contact cards, text, email and more. Free, private and no signup required.">
+  <meta name="twitter:image" content="https://yourdomain.com/quick-qr-preview.png">
+  <script type="application/ld+json" id="schema-app">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Quick QR","description":"A free, private, browser-based QR code generator for URLs, text, email, phone, SMS, Wi-Fi and vCard contact QR codes.","applicationCategory":"UtilitiesApplication","operatingSystem":"Any modern web browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+  <script type="application/ld+json" id="schema-faq">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a QR code?","acceptedAnswer":{"@type":"Answer","text":"A QR code is a two-dimensional barcode that stores information such as a web link, contact card, Wi-Fi credentials or plain text. A smartphone camera or scanner app can read it and open the encoded content."}},{"@type":"Question","name":"How do QR codes work?","acceptedAnswer":{"@type":"Answer","text":"QR codes arrange dark and light modules in a square grid. Scanners detect the position markers, decode the pattern and convert it back into the original text or command."}},{"@type":"Question","name":"Can I create QR codes for free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Quick QR generates QR codes for free in your browser and lets you download PNG or SVG files without signup."}},{"@type":"Question","name":"Can I generate Wi-Fi QR codes?","acceptedAnswer":{"@type":"Answer","text":"Yes. Enter the network name, password and security type to create a Wi-Fi QR code compatible with many modern phones."}},{"@type":"Question","name":"Can I create a contact QR code?","acceptedAnswer":{"@type":"Answer","text":"Yes. The vCard option creates a standards-based contact QR code with name, company, title, phone, email, website and address fields."}},{"@type":"Question","name":"Are my QR codes stored?","acceptedAnswer":{"@type":"Answer","text":"No. QR content is generated locally in your browser session. The application does not store QR data, use accounts, cookies or backend databases."}},{"@type":"Question","name":"Do I need an account?","acceptedAnswer":{"@type":"Answer","text":"No account is required. All features are available immediately on the static web page."}},{"@type":"Question","name":"Can I use generated QR codes commercially?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can use the generated QR code images for business cards, posters, packaging, websites and other commercial materials. Always test before printing."}},{"@type":"Question","name":"What is a dynamic QR code?","acceptedAnswer":{"@type":"Answer","text":"A true dynamic QR code points to a managed redirect URL whose destination can be changed later. That requires server-side storage and redirect services."}},{"@type":"Question","name":"Why doesn't this tool require a backend?","acceptedAnswer":{"@type":"Answer","text":"Quick QR performs QR generation, rendering, customization and downloads entirely with client-side JavaScript in the browser."}}]}</script>
+<script id="quick-qr-embedded-engine">
+/*! Embedded QR engine: derived from Kazuhiko Arase QRCode for JavaScript, MIT License. Browser wrapper added for Quick QR. */
+(function(global){
+  if(global.QRCode && global.QRCode.create && global.QRCode.toCanvas){global.__QuickQREmbeddedEngine='existing';return;}
+  var modules={
+"/QRCode/QRMath.js":function(require,module,exports){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+},
+"/QRCode/QRRSBlock.js":function(require,module,exports){
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+},
+"/QRCode/QRMaskPattern.js":function(require,module,exports){
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+},
+"/QRCode/QR8bitByte.js":function(require,module,exports){
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+},
+"/QRCode/QRErrorCorrectLevel.js":function(require,module,exports){
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+},
+"/QRCode/QRPolynomial.js":function(require,module,exports){
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+},
+"/QRCode/QRMode.js":function(require,module,exports){
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+},
+"/QRCode/QRBitBuffer.js":function(require,module,exports){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+},
+"/QRCode/QRUtil.js":function(require,module,exports){
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+},
+"/QRCode/index.js":function(require,module,exports){
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+}
+  };
+  var cache={};
+  function normalize(path){
+    var parts=path.split('/'), out=[];
+    for(var i=0;i<parts.length;i++){var p=parts[i]; if(!p||p==='.')continue; if(p==='..')out.pop(); else out.push(p);}
+    return '/' + out.join('/');
+  }
+  function dirname(path){return path.slice(0,path.lastIndexOf('/'))||'/';}
+  function load(id, parent){
+    var path=id.charAt(0)==='.'?normalize(dirname(parent)+'/'+id):normalize(id);
+    if(!modules[path] && modules[path+'.js']) path=path+'.js';
+    if(!modules[path]) throw new Error('Embedded QR module not found: '+id);
+    if(cache[path]) return cache[path].exports;
+    var module={exports:{}}; cache[path]=module;
+    modules[path](function(child){return load(child,path);}, module, module.exports);
+    return module.exports;
+  }
+  var QRCore=load('/QRCode/index.js');
+  var Levels=load('/QRCode/QRErrorCorrectLevel.js');
+  function level(value){return Levels[String(value||'M').toUpperCase()] ?? Levels.M;}
+  function create(text, options){
+    var q=new QRCore(-1, level(options && options.errorCorrectionLevel));
+    q.addData(String(text || ''));
+    q.make();
+    return {
+      modules: {
+        size: q.getModuleCount(),
+        get: function(row,col){return q.isDark(row,col);}
+      },
+      moduleCount: q.getModuleCount(),
+      _core: q
+    };
+  }
+  function toCanvas(canvas, text, options, callback){
+    try{
+      options=options||{};
+      var qr=create(text, options);
+      var count=qr.modules.size;
+      var margin=Number.isFinite(+options.margin)?+options.margin:4;
+      var width=Number.isFinite(+options.width)?+options.width:256;
+      canvas.width=width; canvas.height=width;
+      var ctx=canvas.getContext('2d');
+      var dark=(options.color && options.color.dark)||'#000000';
+      var light=(options.color && options.color.light)||'#ffffff';
+      var cell=width/(count+margin*2);
+      ctx.fillStyle=light; ctx.fillRect(0,0,width,width);
+      ctx.fillStyle=dark;
+      for(var r=0;r<count;r++){for(var c=0;c<count;c++){if(qr.modules.get(r,c)){ctx.fillRect((c+margin)*cell,(r+margin)*cell,Math.ceil(cell),Math.ceil(cell));}}}
+      if(callback) callback(null);
+      return canvas;
+    }catch(err){ if(callback) callback(err); else throw err; }
+  }
+  global.QRCode={create:create,toCanvas:toCanvas,version:'embedded-arase'};
+  global.__QuickQREmbeddedEngine='ready';
+})(window);
+</script>
+  <style>
+    :root{color-scheme:light;--bg:#f8fafc;--surface:#fff;--surface2:#eef6ff;--text:#0f172a;--muted:#475569;--brand:#2563eb;--brand2:#7c3aed;--border:#dbe3ef;--ok:#047857;--danger:#b91c1c;--shadow:0 20px 50px rgba(15,23,42,.12);--radius:22px;--focus:0 0 0 4px rgba(37,99,235,.25)}
+    [data-theme="dark"]{color-scheme:dark;--bg:#0b1220;--surface:#111827;--surface2:#14213d;--text:#f8fafc;--muted:#cbd5e1;--brand:#60a5fa;--brand2:#a78bfa;--border:#334155;--ok:#34d399;--danger:#f87171;--shadow:0 20px 50px rgba(0,0,0,.35)}
+    @media(prefers-color-scheme:dark){[data-theme="system"]{color-scheme:dark;--bg:#0b1220;--surface:#111827;--surface2:#14213d;--text:#f8fafc;--muted:#cbd5e1;--brand:#60a5fa;--brand2:#a78bfa;--border:#334155;--ok:#34d399;--danger:#f87171;--shadow:0 20px 50px rgba(0,0,0,.35)}}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top left,rgba(37,99,235,.12),transparent 34rem),var(--bg);color:var(--text);line-height:1.6}a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}.container{width:min(1160px,92vw);margin:auto}.skip{position:absolute;left:-999px;top:1rem;background:var(--surface);padding:.8rem 1rem;border-radius:.7rem}.skip:focus{left:1rem;z-index:10;box-shadow:var(--focus)}header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}.nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.9rem 0}.logo{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.2rem;color:var(--text)}.mark{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:white}.links{display:flex;gap:1rem;align-items:center}.links a{color:var(--muted);font-weight:600}.theme-row{display:flex;align-items:center;gap:.5rem}.hero{padding:4.5rem 0 2rem;text-align:center}.eyebrow{display:inline-flex;gap:.5rem;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:.35rem .8rem;color:var(--muted);font-weight:700}h1{font-size:clamp(2.5rem,6vw,5rem);line-height:1.02;margin:1rem 0;background:linear-gradient(135deg,var(--text),var(--brand));-webkit-background-clip:text;background-clip:text;color:transparent}h2{font-size:clamp(1.8rem,3vw,2.4rem);line-height:1.1;margin:0 0 1rem}.subtitle{max-width:760px;margin:0 auto 2rem;color:var(--muted);font-size:1.18rem}.app{display:grid;grid-template-columns:1.05fr .95fr;gap:1.5rem;align-items:start;margin:1.5rem auto 3rem;text-align:left}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.25rem}.grid{display:grid;gap:1rem}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:block;font-weight:750;margin-bottom:.35rem}.hint{font-size:.88rem;color:var(--muted)}input,textarea,select,button{font:inherit}input,textarea,select{width:100%;border:1px solid var(--border);border-radius:14px;padding:.8rem .9rem;background:var(--bg);color:var(--text)}textarea{min-height:116px;resize:vertical}input:focus,textarea:focus,select:focus,button:focus-visible{outline:none;box-shadow:var(--focus);border-color:var(--brand)}button{border:0;border-radius:14px;padding:.85rem 1rem;cursor:pointer;font-weight:800}.btn{background:linear-gradient(135deg,var(--brand),var(--brand2));color:white}.btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn.ghost{background:transparent;color:var(--brand);border:1px solid var(--border)}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}.actions button:first-child{grid-column:1/-1}.preview-card{position:sticky;top:5.8rem}.qr-frame{display:grid;place-items:center;min-height:360px;background:linear-gradient(135deg,var(--surface2),var(--surface));border:1px dashed var(--border);border-radius:18px;padding:1rem;overflow:hidden}.qr-frame canvas{max-width:100%;height:auto;border-radius:12px}.summary{margin-top:1rem;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:16px;word-break:break-word}.status{min-height:1.5rem;color:var(--ok);font-weight:800}.status.error{color:var(--danger)}.status.warn{color:#b45309}[data-theme="dark"] .status.warn{color:#fbbf24}.features{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin:2rem 0}.feature{padding:1.2rem;background:var(--surface);border:1px solid var(--border);border-radius:20px}.feature b{display:block;margin:.4rem 0}.icon{font-size:1.45rem}.content-section,.faq{padding:2rem 0}.article{display:grid;gap:1rem}.article section,.faq details{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.35rem}.faq details{margin-bottom:.8rem}.faq summary{font-weight:850;cursor:pointer}footer{border-top:1px solid var(--border);padding:2rem 0;color:var(--muted)}.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.tooltip{border-bottom:1px dotted currentColor;cursor:help}.hidden{display:none!important}@media(max-width:860px){.app,.footer-grid{grid-template-columns:1fr}.preview-card{position:static}.features{grid-template-columns:repeat(2,1fr)}.links{display:none}.two,.three,.actions{grid-template-columns:1fr}.hero{text-align:left}.subtitle{margin-left:0}.qr-frame{min-height:280px}}@media(max-width:520px){.features{grid-template-columns:1fr}.nav{align-items:flex-start}.theme-row{width:100%;justify-content:flex-end}h1{font-size:2.5rem}.card{padding:1rem}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#generator">Skip to generator</a>
+  <header>
+    <nav class="container nav" aria-label="Primary navigation">
+      <a class="logo" href="#top" aria-label="Quick QR home"><span class="mark" aria-hidden="true">QR</span><span>Quick QR</span></a>
+      <div class="links" role="list"><a href="#generator">Generator</a><a href="#features">Features</a><a href="#faq">FAQ</a><a href="#learn">Learn</a></div>
+      <div class="theme-row"><label for="theme" class="sr-only">Theme</label><select id="theme" aria-label="Theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+    </nav>
+  </header>
+  <main id="top">
+    <section class="hero container" aria-labelledby="hero-title">
+      <p class="eyebrow">Private by design · No login · Browser based</p>
+      <h1 id="hero-title">Free QR Code Generator</h1>
+      <p class="subtitle">Create beautiful QR codes for websites, Wi-Fi networks, contact cards, plain text, email, phone and SMS. Customize colors, size and error correction, then download PNG or SVG instantly.</p>
+    </section>
+
+    <section id="generator" class="container app" aria-labelledby="generator-title">
+      <div class="card grid">
+        <div><h2 id="generator-title">QR Generator</h2><p class="hint">Everything runs locally in your browser. Your QR content is never uploaded or stored. The QR engine is embedded for offline/CDN-blocked environments, with CDN fallback retry only if the embedded engine fails.</p></div>
+        <div class="two grid">
+          <div><label for="type">Content type</label><select id="type"><option value="url">URL</option><option value="text">Plain Text</option><option value="email">Email</option><option value="phone">Phone</option><option value="sms">SMS</option><option value="wifi">Wi-Fi</option><option value="vcard">vCard</option></select></div>
+          <div><label for="pseudo">Pseudo Dynamic QR <span class="tooltip" title="Destination cannot be changed after QR creation. True Dynamic QR Codes require server-side storage and redirects.">(No Backend)</span></label><select id="pseudo"><option value="off">Off</option><option value="on">On for URL</option></select></div>
+        </div>
+        <div id="fields" class="grid" aria-live="polite"></div>
+        <fieldset class="grid" style="border:0;padding:0;margin:0"><legend style="font-weight:850;margin-bottom:.4rem">Customization</legend>
+          <div class="three grid"><div><label for="size">QR size</label><select id="size"><option value="512">512×512</option><option value="1024">1024×1024</option><option value="responsive">Responsive preview</option></select></div><div><label for="ecc">Error correction</label><select id="ecc"><option>L</option><option selected>M</option><option>Q</option><option>H</option></select></div><div><label for="quiet">Quiet zone</label><input id="quiet" type="range" min="0" max="8" value="4"><span class="hint" id="quietVal">4 modules</span></div></div>
+          <div class="three grid"><div><label for="fg">Foreground color</label><input id="fg" type="color" value="#111827"></div><div><label for="bg">Background color</label><input id="bg" type="color" value="#ffffff"></div><div><label for="rounded">Rounded modules</label><select id="rounded"><option value="0">Off</option><option value="0.25">Soft</option><option value="0.45">Round</option></select></div></div>
+          <div><label for="logo">Logo upload <span class="hint">optional, local only</span></label><input id="logo" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"><p class="hint">Logo remains on your device and is not embedded in browser storage.</p></div>
+        </fieldset>
+        <div class="actions" aria-label="Generate, download and copy tools"><button class="btn" id="generateQr">Generate QR</button><button class="btn secondary" id="downloadPng">Download PNG</button><button class="btn secondary" id="downloadSvg">Download SVG</button><button class="btn secondary" id="copyText">Copy Content</button><button class="btn ghost" id="copyImage">Copy QR Image</button></div>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+      </div>
+      <aside class="card preview-card" aria-labelledby="preview-title">
+        <h2 id="preview-title">Live Preview</h2>
+        <div class="qr-frame"><canvas id="canvas" width="512" height="512" aria-label="Generated QR code preview"></canvas></div>
+        <div class="summary"><b>Encoded content summary</b><p id="summaryText">https://example.com</p></div>
+      </aside>
+    </section>
+
+    <section id="features" class="container" aria-labelledby="features-title"><h2 id="features-title">Built for speed and privacy</h2><div class="features"><div class="feature"><span class="icon" aria-hidden="true">🔓</span><b>No Login Required</b><span class="hint">Generate QR codes immediately.</span></div><div class="feature"><span class="icon" aria-hidden="true">🛡️</span><b>Privacy First</b><span class="hint">No QR data leaves your browser.</span></div><div class="feature"><span class="icon" aria-hidden="true">⚡</span><b>100% Browser Based</b><span class="hint">Static HTML with client-side JavaScript.</span></div><div class="feature"><span class="icon" aria-hidden="true">✨</span><b>Instant QR Generation</b><span class="hint">Live preview updates as you type, or tap Generate QR to refresh manually.</span></div><div class="feature"><span class="icon" aria-hidden="true">📱</span><b>Mobile Friendly</b><span class="hint">Touch-ready responsive layout.</span></div></div></section>
+
+    <section id="faq" class="container faq" aria-labelledby="faq-title"><h2 id="faq-title">Frequently Asked Questions</h2>
+      <details open><summary>What is a QR code?</summary><p>A QR code is a square, two-dimensional barcode that can contain a URL, text, contact details, Wi-Fi configuration and many other kinds of information.</p></details>
+      <details><summary>How do QR codes work?</summary><p>A scanner reads the grid of modules, identifies alignment patterns and error correction data, then converts the encoded pattern back into usable content.</p></details>
+      <details><summary>Can I create QR codes for free?</summary><p>Yes. Quick QR is free to use and works without signup, payment or a backend service.</p></details>
+      <details><summary>Can I generate Wi-Fi QR codes?</summary><p>Yes. Use the Wi-Fi type, add your network name, password and security type, and download the QR code for sharing access.</p></details>
+      <details><summary>Can I create a contact QR code?</summary><p>Yes. The vCard mode creates a valid contact card that can include name, company, job title, phone, email, website and address.</p></details>
+      <details><summary>Are my QR codes stored?</summary><p>No. QR data is processed in memory in your browser and is not sent to a server or saved in a database.</p></details>
+      <details><summary>Do I need an account?</summary><p>No. The application has no login, signup or user profile functionality.</p></details>
+      <details><summary>Can I use generated QR codes commercially?</summary><p>Yes. You can use downloaded QR images for commercial materials. Test scans at the final printed size before publishing.</p></details>
+      <details><summary>What is a dynamic QR code?</summary><p>A dynamic QR code uses a server-managed redirect link whose destination can be edited later. This static tool includes only a clearly labeled pseudo dynamic option.</p></details>
+      <details><summary>Why doesn't this tool require a backend?</summary><p>QR generation, preview, styling and downloads are performed by JavaScript in the browser using public CDN resources.</p></details>
+    </section>
+
+    <section id="learn" class="container content-section article" aria-labelledby="learn-title"><h2 id="learn-title">Learn About QR Codes</h2>
+      <section><h2>What is a QR Code?</h2><p>A QR code, short for Quick Response code, is a compact way to store digital information in a pattern that cameras and scanners can understand. Unlike a traditional one-dimensional barcode that is read in a single direction, a QR code stores information across a two-dimensional grid. This lets it hold more data while remaining easy to scan from many angles. Most modern phones can recognize QR codes directly from the camera app, which makes them useful for connecting physical materials to digital actions.</p><p>People use QR codes on business cards, event posters, restaurant menus, product packaging, invoices, classroom documents and websites. The encoded content can be a web address, a plain text note, a phone number, an email command, an SMS command, Wi-Fi network details or a contact card. When someone scans the code, the phone interprets the content and shows the relevant action, such as opening a website or saving a contact.</p><p>A good QR code is not just technically valid; it is easy to scan. Strong contrast, enough quiet zone space, appropriate size and testing across devices all matter. Quick QR helps with these factors by allowing you to adjust colors, size, quiet zone and error correction before download.</p></section>
+      <section><h2>How QR Codes Work</h2><p>QR codes work by translating a string of information into a grid of dark and light modules. The large squares in three corners help scanning software locate and orient the code. Smaller alignment and timing patterns help the scanner understand the grid structure. The remaining modules store the encoded data and error correction information. Error correction allows a QR code to remain readable even if a small portion is damaged, covered or affected by printing imperfections.</p><p>When a phone camera sees a QR code, software first detects the finder patterns, calculates perspective and normalizes the image into a readable grid. It then decodes the module pattern according to the selected error correction level and QR format rules. The result is returned as text, a link or another recognizable command such as mailto, tel, sms, WIFI or VCARD.</p><p>Higher error correction levels improve resilience but can make the pattern denser. A denser code may need to be printed larger to scan reliably. For short URLs and simple text, medium correction is usually a good balance. If you add a logo or plan to print on packaging where damage is possible, a higher correction level can help.</p></section>
+      <section><h2>Generate QR Codes for Websites</h2><p>Website QR codes are one of the most common uses for QR technology. They give users a fast path from offline surfaces to online destinations such as product pages, help centers, landing pages, forms, maps or downloadable resources. To create one, choose the URL type, paste the full address and confirm that it begins with a secure protocol such as https://. A clear and trusted destination improves user confidence when the phone previews the link.</p><p>For printed materials, it is important to test the final QR code after design placement. Do not place it too close to an edge, avoid low contrast color combinations and leave enough quiet zone around the code. If the QR code will appear on a poster, storefront or event graphic, test scanning from the expected viewing distance. Larger displays need larger QR codes.</p><p>Quick QR also includes a Pseudo Dynamic QR mode for URL use cases. It creates a link with a redirect parameter on the same static page, then uses client-side JavaScript to redirect visitors. This is useful for preserving a no-backend architecture, but it is not the same as a true dynamic QR code because the destination cannot be edited after the QR is printed.</p></section>
+      <section><h2>Create Wi-Fi QR Codes</h2><p>Wi-Fi QR codes make network sharing easier by encoding the network name, password and security type into a standard text format. When supported by the scanning device, the user can join the network without typing a long password manually. This is especially helpful for guest networks in offices, cafes, rental homes, events and classrooms where many people need temporary access.</p><p>To create a reliable Wi-Fi QR code, enter the network name exactly as it appears on devices. Wi-Fi names and passwords are case-sensitive, so capitalization and spacing matter. Select the correct security type, such as WPA/WPA2, WEP or no encryption. If the password includes special characters, the generator escapes the values so the QR content remains valid.</p><p>For security, consider using a guest network instead of sharing a primary private network. Print the QR code in a visible but controlled location, and update the guest password periodically if access should be limited. Quick QR generates the Wi-Fi code locally, so the password is not uploaded to a server or saved by the app.</p></section>
+      <section><h2>Create Contact QR Codes</h2><p>A contact QR code stores a digital business card using the vCard format. When scanned, compatible phones can offer to save the contact details directly. This reduces typing errors and makes it easier for customers, colleagues or event attendees to keep your information. A vCard QR code can include name, company, title, phone number, email address, website and postal address.</p><p>Contact QR codes are useful on business cards, brochures, conference badges, reception desks and sales collateral. Keep the information concise because very large contact cards create denser QR codes. If you include a long address or multiple fields, choose an appropriate printed size and consider a higher error correction level for durability.</p><p>Quick QR generates a standards-based VCARD block from the fields you enter. Because the code is created directly in the browser, your personal contact details remain local while you build and preview the QR image. Before sharing publicly, scan the finished file with multiple devices to confirm the contact imports as expected.</p></section>
+      <section><h2>Privacy First QR Generator</h2><p>Many QR tools rely on accounts, redirects, analytics, dashboards or cloud storage. Those services can be useful when scan tracking and editable destinations are required, but they also introduce dependencies and privacy considerations. Quick QR is intentionally designed as a static, client-side application. It does not include login, cookies, databases, analytics dashboards or backend APIs.</p><p>When you type QR content into this page, the browser uses JavaScript to turn it into a QR pattern and draw it on the canvas. Downloads are created locally as PNG or SVG files. Theme preference is the only persistent setting, stored with localStorage so the interface can remember light, dark or system mode. QR data itself is not stored by the application.</p><p>This approach is ideal for fast one-off codes, internal documents, privacy-sensitive text, Wi-Fi sharing and static print materials. If you need scan analytics, destination editing after printing, access controls or campaign reporting, you will need a server-backed dynamic QR platform. For simple static QR generation, a privacy-first browser-only tool keeps the workflow fast and transparent.</p></section>
+    </section>
+  </main>
+  <footer><div class="container footer-grid"><div><b>Quick QR</b><p>Privacy statement: QR content is generated locally in the browser and is not sent to a backend. Theme preference may be saved in localStorage. No cookies are used.</p></div><div><b>Open Source Notice</b><p>Built with HTML, CSS, vanilla JavaScript and the public qrcode CDN library.</p></div><div><b>Links</b><p><a href="https://github.com/" rel="noopener">GitHub</a><br>Attribution: QR generation powered by qrcode.js.</p></div></div></footer>
+<script>
+(function(){
+  'use strict';
+  const $=id=>document.getElementById(id); const els={type:$('type'),pseudo:$('pseudo'),fields:$('fields'),size:$('size'),ecc:$('ecc'),quiet:$('quiet'),quietVal:$('quietVal'),fg:$('fg'),bg:$('bg'),rounded:$('rounded'),logo:$('logo'),canvas:$('canvas'),summary:$('summaryText'),status:$('status'),theme:$('theme')};
+  let logoImg=null, logoUrl=null, qrData='https://example.com', qrLibPromise=null, showGeneratedMessage=false;
+  function setStatus(message,type){
+    els.status.textContent=message||'';
+    els.status.className='status'+(type?' '+type:'');
+  }
+  function ensureQrLib(forceRetry){
+    if(window.QRCode && window.QRCode.create && window.QRCode.toCanvas) return Promise.resolve('embedded-or-loaded');
+    if(forceRetry) qrLibPromise=null;
+    if(qrLibPromise) return qrLibPromise;
+    const urls=[
+      'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js',
+      'https://unpkg.com/qrcode@1.5.4/build/qrcode.min.js'
+    ];
+    setStatus('Embedded QR engine did not initialize. Retrying with public CDN fallback...', 'warn');
+    qrLibPromise=new Promise((resolve,reject)=>{
+      let i=0;
+      function loadNext(){
+        if(window.QRCode && window.QRCode.create && window.QRCode.toCanvas){resolve('cdn');return;}
+        if(i>=urls.length){
+          qrLibPromise=null;
+          reject(new Error('QR engine unavailable. Embedded engine and CDN fallback both failed.'));
+          return;
+        }
+        const url=urls[i++];
+        setStatus('Trying QR engine fallback '+i+' of '+urls.length+'...', 'warn');
+        const script=document.createElement('script');
+        script.src=url;
+        script.async=true;
+        script.onload=()=>window.QRCode?resolve('cdn'):loadNext();
+        script.onerror=loadNext;
+        document.head.appendChild(script);
+      }
+      loadNext();
+    });
+    return qrLibPromise;
+  }
+  const params=new URLSearchParams(location.search); const redirect=params.get('redirect');
+  if(redirect){ try{const target=decodeURIComponent(redirect); if(/^https?:\/\//i.test(target)) location.replace(target);}catch(e){} }
+  const savedTheme=localStorage.getItem('theme')||'system'; document.documentElement.dataset.theme=savedTheme; els.theme.value=savedTheme;
+  els.theme.addEventListener('change',()=>{document.documentElement.dataset.theme=els.theme.value;localStorage.setItem('theme',els.theme.value)});
+  function escapeWifi(v){return String(v||'').replace(/([\\;,":])/g,'\\$1')}
+  function makeInput(id,label,type='text',value='',placeholder=''){return `<div><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${value}" placeholder="${placeholder}"></div>`}
+  function makeFields(){const t=els.type.value;let html='';
+    if(t==='url') html=makeInput('url','Website URL','url','https://example.com','https://example.com');
+    if(t==='text') html='<div><label for="text">Plain text</label><textarea id="text" placeholder="Hello World">Hello World</textarea></div>';
+    if(t==='email') html=makeInput('email','Email address','email','user@example.com','user@example.com');
+    if(t==='phone') html=makeInput('phone','Phone number','tel','+11234567890','+11234567890');
+    if(t==='sms') html=makeInput('sms','SMS phone number','tel','+11234567890','+11234567890');
+    if(t==='wifi') html=`<div class="three grid">${makeInput('ssid','Network name','text','MyWifi','MyWifi')}${makeInput('pass','Password','text','Password123','Password123')}<div><label for="security">Security type</label><select id="security"><option value="WPA">WPA/WPA2</option><option value="WEP">WEP</option><option value="nopass">None</option></select></div></div>`;
+    if(t==='vcard') html=`<div class="two grid">${makeInput('name','Name','text','Alex Morgan','Full name')}${makeInput('company','Company','text','Example Inc.','Company')}${makeInput('title','Title','text','Product Manager','Title')}${makeInput('vphone','Phone','tel','+11234567890','Phone')}${makeInput('vemail','Email','email','alex@example.com','Email')}${makeInput('website','Website','url','https://example.com','Website')}<div style="grid-column:1/-1"><label for="address">Address</label><input id="address" value="123 Market Street, San Francisco, CA" placeholder="Address"></div></div>`;
+    els.fields.innerHTML=html; els.fields.querySelectorAll('input,textarea,select').forEach(e=>['input','change'].forEach(evt=>e.addEventListener(evt,schedule))); schedule(); }
+  function val(id){return ($(id)&&$(id).value.trim())||''}
+  function buildData(){const t=els.type.value; let out='';
+    if(t==='url'){out=val('url')||'https://example.com'; if(els.pseudo.value==='on'){const base=location.origin+location.pathname; out=base+'?redirect='+encodeURIComponent(out)}}
+    if(t==='text') out=val('text')||'Hello World';
+    if(t==='email') out='mailto:'+(val('email')||'user@example.com');
+    if(t==='phone') out='tel:'+(val('phone')||'+11234567890');
+    if(t==='sms') out='sms:'+(val('sms')||'+11234567890');
+    if(t==='wifi'){const sec=val('security')||'WPA'; out=`WIFI:T:${sec};S:${escapeWifi(val('ssid')||'MyWifi')};P:${sec==='nopass'?'':escapeWifi(val('pass'))};;`}
+    if(t==='vcard') out=['BEGIN:VCARD','VERSION:3.0','FN:'+val('name'),'ORG:'+val('company'),'TITLE:'+val('title'),'TEL:'+val('vphone'),'EMAIL:'+val('vemail'),'URL:'+val('website'),'ADR:;;'+val('address'),'END:VCARD'].join('\n');
+    return out; }
+  function readLogo(file){if(logoUrl) URL.revokeObjectURL(logoUrl); logoImg=null; if(!file){schedule();return} logoUrl=URL.createObjectURL(file); const img=new Image(); img.onload=()=>{logoImg=img;schedule()}; img.src=logoUrl;}
+  function drawRound(ctx,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();ctx.fill();}
+  function renderCanvas(){
+    qrData=buildData();
+    els.summary.textContent=qrData;
+    if(!window.QRCode){setStatus('Loading QR engine...', 'warn');return;}
+    const size=els.size.value==='responsive'?512:+els.size.value;
+    const quiet=+els.quiet.value;
+    els.canvas.width=size; els.canvas.height=size;
+    const ctx=els.canvas.getContext('2d');
+    const radius=parseFloat(els.rounded.value);
+    try{
+      if(radius && QRCode.create){
+        const qr=QRCode.create(qrData,{errorCorrectionLevel:els.ecc.value});
+        const count=qr.modules.size;
+        const cell=size/(count+quiet*2);
+        ctx.fillStyle=els.bg.value; ctx.fillRect(0,0,size,size);
+        ctx.fillStyle=els.fg.value;
+        for(let r=0;r<count;r++){
+          for(let c=0;c<count;c++){
+            if(qr.modules.get(r,c)){
+              const x=(c+quiet)*cell,y=(r+quiet)*cell;
+              drawRound(ctx,x,y,cell,cell,cell*radius);
+            }
+          }
+        }
+        drawLogo(ctx,size);
+        setStatus(showGeneratedMessage?'QR code generated.':'', showGeneratedMessage?'':''); showGeneratedMessage=false;
+        return;
+      }
+      QRCode.toCanvas(els.canvas, qrData, {width:size, margin:quiet, errorCorrectionLevel:els.ecc.value, color:{dark:els.fg.value, light:els.bg.value}}, function(err){
+        if(err){setStatus('QR generation failed. Try shorter content, reduce error correction, or click Generate QR to retry.', 'error'); return;}
+        drawLogo(ctx,size);
+        setStatus(showGeneratedMessage?'QR code generated.':'', showGeneratedMessage?'':''); showGeneratedMessage=false;
+      });
+    }catch(e){
+      setStatus('QR generation failed. Try shorter content, reduce error correction, or click Generate QR to retry.', 'error');
+    }
+  }
+  function drawLogo(ctx,size){
+    if(!logoImg)return;
+    const box=size*.18,x=(size-box)/2,y=(size-box)/2;
+    ctx.fillStyle=els.bg.value;
+    drawRound(ctx,x-8,y-8,box+16,box+16,18);
+    ctx.drawImage(logoImg,x,y,box,box);
+  }
+  function svgString(){const quiet=+els.quiet.value; const qr=QRCode.create(qrData,{errorCorrectionLevel:els.ecc.value}); const count=qr.modules.size; const total=count+quiet*2; const rr=parseFloat(els.rounded.value); let parts=[`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="geometricPrecision"><rect width="100%" height="100%" fill="${els.bg.value}"/>`]; for(let r=0;r<count;r++){for(let c=0;c<count;c++){if(qr.modules.get(r,c)){parts.push(rr?`<rect x="${c+quiet}" y="${r+quiet}" width="1" height="1" rx="${rr}" fill="${els.fg.value}"/>`:`<rect x="${c+quiet}" y="${r+quiet}" width="1" height="1" fill="${els.fg.value}"/>`)}}} parts.push('</svg>'); return parts.join('');}
+  let raf=0; function schedule(){
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(()=>{
+      qrData=buildData();
+      els.summary.textContent=qrData;
+      ensureQrLib().then(()=>{try{renderCanvas();}catch(e){setStatus('QR generation failed. Try shorter content, reduce error correction, or click Generate QR to retry.', 'error')}}).catch((e)=>{setStatus('QR engine unavailable: the embedded engine failed and CDN fallback is blocked or unreachable. Click Generate QR to retry, or use this HTML file from a trusted local/static host.', 'error')});
+    });
+  }
+  function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+  $('generateQr').addEventListener('click',()=>{showGeneratedMessage=true; ensureQrLib(true).finally(schedule);});
+  $('downloadPng').addEventListener('click',()=>els.canvas.toBlob(b=>download('quick-qr.png',b),'image/png'));
+  $('downloadSvg').addEventListener('click',()=>download('quick-qr.svg',new Blob([svgString()],{type:'image/svg+xml'})));
+  $('copyText').addEventListener('click',async()=>{await navigator.clipboard.writeText(qrData); els.status.textContent='Content copied.'});
+  $('copyImage').addEventListener('click',async()=>{if(!navigator.clipboard||!window.ClipboardItem){els.status.textContent='Image clipboard is not supported in this browser.';return} els.canvas.toBlob(async b=>{await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);els.status.textContent='QR image copied.'})});
+  [els.type,els.pseudo,els.size,els.ecc,els.quiet,els.fg,els.bg,els.rounded].forEach(e=>['input','change'].forEach(evt=>e.addEventListener(evt,()=>{els.quietVal.textContent=els.quiet.value+' modules'; if(e===els.type)makeFields(); else schedule()}))); els.logo.addEventListener('change',e=>readLogo(e.target.files[0]));
+  // Initialize input fields immediately, independent of CDN library timing.
+  makeFields();
+  ensureQrLib().then(schedule).catch(()=>{setStatus('QR engine unavailable: embedded library failed and both CDN fallback attempts were blocked. QR generation cannot run until scripts are allowed.', 'error')});
+})();
+</script>
+</body>
+</html>
